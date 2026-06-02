@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UXICORNS — Bingo Sheet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bebas+Neue&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦄</text></svg>">
+</head>
+<body>
+  <main class="sheet">
+    <header class="header">
+      <h1 class="title" aria-label="UXICORNS">
+        <span class="title-u">U</span><span class="title-x">X</span><span class="title-i">I</span><span class="title-c">C</span><span class="title-o">O</span><span class="title-r">R</span><span class="title-n">N</span><span class="title-s">S</span>
+      </h1>
+      <p class="subtitle">Lorem Ipsum 2026</p>
+    </header>
+
+    <div class="grid" id="bingo-grid" role="grid" aria-label="UX Bingo Sheet"></div>
+
+    <footer class="footer">
+      <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+    </footer>
+
+    <button type="button" class="shuffle-btn" id="shuffle-btn" aria-label="Generate new bingo sheet">
+      New Sheet
+    </button>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
