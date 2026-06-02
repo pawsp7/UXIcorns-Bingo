@@ -12,24 +12,61 @@
 </head>
 <body>
   <main class="sheet">
-    <header class="header">
-      <h1 class="title" aria-label="UXICORNS">
-        <span class="title-u">U</span><span class="title-x">X</span><span class="title-i">I</span><span class="title-c">C</span><span class="title-o">O</span><span class="title-r">R</span><span class="title-n">N</span><span class="title-s">S</span>
-      </h1>
-      <p class="subtitle">Lorem Ipsum 2026</p>
-    </header>
+    <div class="export-area" id="export-area">
+      <header class="header">
+        <h1 class="title" aria-label="UXICORNS">
+          <span class="title-u">U</span><span class="title-x">X</span><span class="title-i">I</span><span class="title-c">C</span><span class="title-o">O</span><span class="title-r">R</span><span class="title-n">N</span><span class="title-s">S</span>
+        </h1>
+        <p class="subtitle">Lorem Ipsum 2026</p>
+      </header>
 
-    <div class="grid" id="bingo-grid" role="grid" aria-label="UX Bingo Sheet"></div>
+      <div class="grid" id="bingo-grid" role="grid" aria-label="UX Bingo Sheet"></div>
 
-    <footer class="footer">
-      <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
-    </footer>
+      <footer class="footer">
+        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+      </footer>
+    </div>
 
-    <button type="button" class="shuffle-btn" id="shuffle-btn" aria-label="Generate new bingo sheet">
-      New Sheet
-    </button>
+    <div class="actions">
+      <button type="button" class="action-btn shuffle-btn" id="shuffle-btn" aria-label="Generate new bingo sheet">
+        New Sheet
+      </button>
+      <button type="button" class="action-btn export-btn" id="export-btn" aria-label="Export bingo sheet as image">
+        Export Card
+      </button>
+    </div>
   </main>
 
+  <dialog class="cell-editor" id="cell-editor" aria-labelledby="cell-editor-title">
+    <form method="dialog" class="cell-editor__form" id="cell-editor-form">
+      <header class="cell-editor__header">
+        <h2 id="cell-editor-title">Customize Cell</h2>
+        <p class="cell-editor__criterion" id="cell-editor-criterion"></p>
+      </header>
+
+      <label class="cell-editor__field">
+        <span>Custom text</span>
+        <textarea id="cell-editor-text" rows="3" placeholder="Add your own caption or notes…"></textarea>
+      </label>
+
+      <label class="cell-editor__field">
+        <span>Image</span>
+        <input type="file" id="cell-editor-image" accept="image/*">
+      </label>
+
+      <div class="cell-editor__preview" id="cell-editor-preview" hidden>
+        <img id="cell-editor-preview-img" alt="Image preview">
+      </div>
+
+      <div class="cell-editor__actions">
+        <button type="button" class="cell-editor__clear" id="cell-editor-clear">Clear</button>
+        <button type="button" class="cell-editor__cancel" value="cancel">Cancel</button>
+        <button type="submit" class="cell-editor__save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

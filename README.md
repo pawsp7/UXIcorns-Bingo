@@ -8,6 +8,8 @@ A static website that randomly generates a **2×2 UX bingo sheet** styled after 
 - Circular cells with the signature yellow, blue, and pink palette
 - Multi-colour **UXICORNS** title, Lorem Ipsum footer, and pop-in animations
 - **New Sheet** button to shuffle a fresh board
+- **Click any circle** to add a custom image and caption text
+- **Export Card** downloads the completed sheet as a PNG (including your images and text)
 
 ## Run locally
 
