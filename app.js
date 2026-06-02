@@ -189,32 +189,113 @@ function saveCellEditor() {
   closeCellEditor();
 }
 
-async function exportSheet() {
-  const exportArea = document.getElementById("export-area");
+const PDF_MARGIN = 20;
+const PDF_LINE_HEIGHT = 7;
 
+function getImageFormat(dataUrl) {
+  const match = dataUrl.match(/^data:image\/(\w+);/);
+  const type = match ? match[1].toUpperCase() : "PNG";
+  if (type === "JPG") return "JPEG";
+  if (type === "SVG") return "PNG";
+  return type;
+}
+
+function loadImage(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Could not load image for export."));
+    img.src = dataUrl;
+  });
+}
+
+function addWrappedText(doc, text, x, y, maxWidth, lineHeight = PDF_LINE_HEIGHT) {
+  const lines = doc.splitTextToSize(text, maxWidth);
+  doc.text(lines, x, y);
+  return y + lines.length * lineHeight;
+}
+
+async function exportSheet() {
   exportBtn.disabled = true;
   exportBtn.textContent = "Exporting…";
 
   try {
-    await document.fonts.ready;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: "mm", format: "a4" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const contentW = pageW - PDF_MARGIN * 2;
 
-    const canvas = await html2canvas(exportArea, {
-      backgroundColor: "#e8e8e8",
-      scale: 2,
-      useCORS: true,
-      logging: false,
-    });
+    for (let i = 0; i < cells.length; i++) {
+      if (i > 0) doc.addPage();
 
-    const link = document.createElement("a");
-    link.download = `uxicorns-bingo-${Date.now()}.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
+      const cell = cells[i];
+      let y = PDF_MARGIN + 8;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(100);
+      doc.text(`Cell ${i + 1} of ${cells.length}`, PDF_MARGIN, PDF_MARGIN + 4);
+
+      doc.setTextColor(26, 79, 208);
+      doc.setFontSize(14);
+      doc.text("Criteria", PDF_MARGIN, y);
+      y += 8;
+
+      doc.setTextColor(0);
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      y = addWrappedText(doc, cell.criterion, PDF_MARGIN, y, contentW, 8) + 12;
+
+      doc.setTextColor(26, 79, 208);
+      doc.setFontSize(14);
+      doc.text("Text", PDF_MARGIN, y);
+      y += 8;
+
+      doc.setTextColor(0);
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "normal");
+      const customText = cell.customText.trim() || "—";
+      y = addWrappedText(doc, customText, PDF_MARGIN, y, contentW, 6) + 14;
+
+      doc.setTextColor(26, 79, 208);
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("Image", PDF_MARGIN, y);
+      y += 10;
+
+      if (cell.imageDataUrl) {
+        const img = await loadImage(cell.imageDataUrl);
+        const format = getImageFormat(cell.imageDataUrl);
+        const maxW = contentW;
+        const maxH = pageH - y - PDF_MARGIN;
+        const aspect = img.width / img.height;
+        let drawW = maxW;
+        let drawH = drawW / aspect;
+
+        if (drawH > maxH) {
+          drawH = maxH;
+          drawW = drawH * aspect;
+        }
+
+        const x = PDF_MARGIN + (contentW - drawW) / 2;
+        doc.addImage(cell.imageDataUrl, format, x, y, drawW, drawH);
+      } else {
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(11);
+        doc.setTextColor(120);
+        doc.text("No image uploaded", PDF_MARGIN, y + 4);
+        doc.setTextColor(0);
+      }
+    }
+
+    doc.save(`uxicorns-bingo-${Date.now()}.pdf`);
   } catch (error) {
     alert("Export failed. Please try again.");
     console.error(error);
   } finally {
     exportBtn.disabled = false;
-    exportBtn.textContent = "Export Card";
+    exportBtn.textContent = "Export PDF";
   }
 }
 

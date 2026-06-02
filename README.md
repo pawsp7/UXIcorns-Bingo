@@ -9,7 +9,7 @@ A static website that randomly generates a **2×2 UX bingo sheet** styled after 
 - Multi-colour **UXICORNS** title, Lorem Ipsum footer, and pop-in animations
 - **New Sheet** button to shuffle a fresh board
 - **Click any circle** to add a custom image and caption text
-- **Export Card** downloads the completed sheet as a PNG (including your images and text)
+- **Export PDF** downloads a PDF with one page per cell: criteria, custom text, then image
 
 ## Run locally
 
