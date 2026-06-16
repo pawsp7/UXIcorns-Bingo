@@ -31,9 +31,17 @@
       <button type="button" class="action-btn shuffle-btn" id="shuffle-btn" aria-label="Generate new bingo sheet">
         New Sheet
       </button>
+      <button type="button" class="action-btn save-btn" id="save-btn" aria-label="Save card configuration">
+        Save Config
+      </button>
+      <button type="button" class="action-btn load-btn" id="load-btn" aria-label="Load card configuration from file">
+        Load Config
+      </button>
       <button type="button" class="action-btn export-btn" id="export-btn" aria-label="Export bingo sheet as PDF">
         Export PDF
       </button>
+      <input type="file" id="load-config-input" accept="application/json,.json" hidden>
+      <p class="save-status" id="save-status" role="status" aria-live="polite"></p>
     </div>
   </main>
 

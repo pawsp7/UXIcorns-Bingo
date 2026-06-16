@@ -27,9 +27,13 @@ const CELL_STYLES = [
   "cell--pink",
 ];
 
+const CONFIG_VERSION = 1;
+const CONFIG_STORAGE_KEY = "uxicorns-bingo-config";
+
 let cells = [];
 let editingIndex = null;
 let pendingImageDataUrl = null;
+let saveStatusTimeout = null;
 
 const grid = document.getElementById("bingo-grid");
 const editor = document.getElementById("cell-editor");
@@ -40,6 +44,10 @@ const editorImage = document.getElementById("cell-editor-image");
 const editorPreview = document.getElementById("cell-editor-preview");
 const editorPreviewImg = document.getElementById("cell-editor-preview-img");
 const exportBtn = document.getElementById("export-btn");
+const saveBtn = document.getElementById("save-btn");
+const loadBtn = document.getElementById("load-btn");
+const loadConfigInput = document.getElementById("load-config-input");
+const saveStatus = document.getElementById("save-status");
 
 function shuffle(array) {
   const copy = [...array];
@@ -111,11 +119,133 @@ function renderGrid() {
   });
 }
 
-function renderSheet() {
+function renderSheet(skipConfirm = false) {
+  if (!skipConfirm && cells.length > 0) {
+    const hasContent = cells.some((cell) => cell.customText.trim() || cell.imageDataUrl);
+    if (hasContent && !confirm("Start a new sheet? Your current card will be replaced.")) {
+      return;
+    }
+  }
+
   const picked = shuffle(CRITERIA).slice(0, 4);
   const styles = shuffle(CELL_STYLES);
   cells = picked.map((criterion, index) => createCellState(criterion, styles[index]));
   renderGrid();
+  persistConfiguration({ silent: true });
+}
+
+function buildConfiguration() {
+  return {
+    version: CONFIG_VERSION,
+    savedAt: new Date().toISOString(),
+    cells: cells.map((cell) => ({
+      criterion: cell.criterion,
+      style: cell.style,
+      customText: cell.customText,
+      imageDataUrl: cell.imageDataUrl,
+    })),
+  };
+}
+
+function isValidCell(cell) {
+  return (
+    cell &&
+    typeof cell.criterion === "string" &&
+    typeof cell.style === "string" &&
+    CELL_STYLES.includes(cell.style) &&
+    typeof cell.customText === "string" &&
+    (cell.imageDataUrl === null || typeof cell.imageDataUrl === "string")
+  );
+}
+
+function applyConfiguration(config) {
+  if (!config || !Array.isArray(config.cells) || config.cells.length !== 4) {
+    throw new Error("Invalid configuration: expected 4 cells.");
+  }
+
+  if (!config.cells.every(isValidCell)) {
+    throw new Error("Invalid configuration: one or more cells are malformed.");
+  }
+
+  cells = config.cells.map((cell) => ({
+    criterion: cell.criterion,
+    style: cell.style,
+    customText: cell.customText,
+    imageDataUrl: cell.imageDataUrl,
+  }));
+  renderGrid();
+}
+
+function showSaveStatus(message, isError = false) {
+  saveStatus.textContent = message;
+  saveStatus.style.color = isError ? "var(--pink)" : "var(--blue-dark)";
+
+  if (saveStatusTimeout) clearTimeout(saveStatusTimeout);
+  if (message) {
+    saveStatusTimeout = setTimeout(() => {
+      saveStatus.textContent = "";
+    }, 3500);
+  }
+}
+
+function persistConfiguration({ silent = false, download = false } = {}) {
+  const config = buildConfiguration();
+  const serialized = JSON.stringify(config);
+
+  try {
+    localStorage.setItem(CONFIG_STORAGE_KEY, serialized);
+    if (!silent) showSaveStatus("Configuration saved to this browser.");
+  } catch (error) {
+    if (!silent) {
+      showSaveStatus("Browser storage full — use Save Config to download a file.", true);
+    }
+    console.warn("Could not save to localStorage:", error);
+  }
+
+  if (download) {
+    const blob = new Blob([serialized], { type: "application/json" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `uxicorns-bingo-config-${Date.now()}.json`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    showSaveStatus("Configuration downloaded.");
+  }
+
+  return config;
+}
+
+function restoreFromLocalStorage() {
+  try {
+    const raw = localStorage.getItem(CONFIG_STORAGE_KEY);
+    if (!raw) return false;
+
+    applyConfiguration(JSON.parse(raw));
+    showSaveStatus("Restored your last saved card.");
+    return true;
+  } catch (error) {
+    console.warn("Could not restore saved configuration:", error);
+    localStorage.removeItem(CONFIG_STORAGE_KEY);
+    return false;
+  }
+}
+
+function loadConfigurationFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        applyConfiguration(JSON.parse(reader.result));
+        persistConfiguration({ silent: true });
+        showSaveStatus("Configuration loaded.");
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
+    };
+    reader.onerror = () => reject(new Error("Could not read the configuration file."));
+    reader.readAsText(file);
+  });
 }
 
 function readImageFile(file) {
@@ -173,6 +303,7 @@ function saveCellEditor() {
 
   renderGrid();
   closeCellEditor();
+  persistConfiguration({ silent: true });
 }
 
 const PDF_MARGIN = 20;
@@ -317,7 +448,22 @@ editor.addEventListener("cancel", (event) => {
   closeCellEditor();
 });
 
-document.getElementById("shuffle-btn").addEventListener("click", renderSheet);
+document.getElementById("shuffle-btn").addEventListener("click", () => renderSheet());
+saveBtn.addEventListener("click", () => persistConfiguration({ download: true }));
+loadBtn.addEventListener("click", () => loadConfigInput.click());
+loadConfigInput.addEventListener("change", async (event) => {
+  const file = event.target.files[0];
+  event.target.value = "";
+  if (!file) return;
+
+  try {
+    await loadConfigurationFile(file);
+  } catch (error) {
+    showSaveStatus(error.message || "Could not load configuration.", true);
+  }
+});
 exportBtn.addEventListener("click", exportSheet);
 
-renderSheet();
+if (!restoreFromLocalStorage()) {
+  renderSheet(true);
+}

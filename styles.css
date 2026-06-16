@@ -275,6 +275,41 @@ body {
   box-shadow: 0 6px 20px rgba(126, 200, 240, 0.45);
 }
 
+.save-btn {
+  background: var(--pink);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(232, 67, 147, 0.3);
+}
+
+.save-btn:hover {
+  background: var(--blue-mid);
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(45, 111, 212, 0.35);
+}
+
+.load-btn {
+  background: var(--blue-light);
+  color: var(--blue-dark);
+  box-shadow: 0 4px 14px rgba(126, 200, 240, 0.35);
+}
+
+.load-btn:hover {
+  background: var(--pink-light);
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(244, 166, 200, 0.45);
+}
+
+.save-status {
+  flex-basis: 100%;
+  text-align: center;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--blue-dark);
+  min-height: 1.2em;
+  margin: 0;
+}
+
 .action-btn:active {
   transform: scale(0.97);
 }
