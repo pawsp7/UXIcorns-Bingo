@@ -42,26 +42,24 @@
       </button>
       <p class="save-status" id="save-status" role="status" aria-live="polite"></p>
     </div>
-  </main>
 
-  <dialog class="config-dialog" id="config-dialog" aria-labelledby="config-dialog-title">
-    <form method="dialog" class="config-dialog__form" id="config-dialog-form">
-      <header class="config-dialog__header">
-        <h2 id="config-dialog-title">Configuration</h2>
-        <p class="config-dialog__hint" id="config-dialog-hint"></p>
-      </header>
+    <section class="config-panel" id="config-panel" hidden>
+      <div class="config-panel__header">
+        <h2 class="config-panel__title" id="config-panel-title">Copy Configuration</h2>
+        <p class="config-panel__hint" id="config-panel-hint"></p>
+      </div>
 
-      <label class="config-dialog__field">
-        <span id="config-dialog-label">Config text</span>
-        <textarea id="config-text" rows="8" spellcheck="false"></textarea>
+      <label class="config-panel__field">
+        <span id="config-panel-label">Your config</span>
+        <textarea id="config-text" rows="10" spellcheck="false" aria-describedby="config-panel-hint"></textarea>
       </label>
 
-      <div class="config-dialog__actions">
-        <button type="button" class="config-dialog__secondary" id="config-dialog-cancel">Cancel</button>
-        <button type="button" class="config-dialog__primary" id="config-dialog-primary">Copy</button>
+      <div class="config-panel__actions">
+        <button type="button" class="config-panel__close" id="config-panel-close">Close</button>
+        <button type="button" class="config-panel__primary" id="config-panel-primary">Copy to Clipboard</button>
       </div>
-    </form>
-  </dialog>
+    </section>
+  </main>
 
   <dialog class="cell-editor" id="cell-editor" aria-labelledby="cell-editor-title">
     <form method="dialog" class="cell-editor__form" id="cell-editor-form">

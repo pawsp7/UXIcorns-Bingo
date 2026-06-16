@@ -47,15 +47,15 @@ const exportBtn = document.getElementById("export-btn");
 const copyConfigBtn = document.getElementById("copy-config-btn");
 const pasteConfigBtn = document.getElementById("paste-config-btn");
 const saveStatus = document.getElementById("save-status");
-const configDialog = document.getElementById("config-dialog");
-const configDialogTitle = document.getElementById("config-dialog-title");
-const configDialogHint = document.getElementById("config-dialog-hint");
-const configDialogLabel = document.getElementById("config-dialog-label");
+const configPanel = document.getElementById("config-panel");
+const configPanelTitle = document.getElementById("config-panel-title");
+const configPanelHint = document.getElementById("config-panel-hint");
+const configPanelLabel = document.getElementById("config-panel-label");
 const configText = document.getElementById("config-text");
-const configDialogPrimary = document.getElementById("config-dialog-primary");
-const configDialogCancel = document.getElementById("config-dialog-cancel");
+const configPanelPrimary = document.getElementById("config-panel-primary");
+const configPanelClose = document.getElementById("config-panel-close");
 
-let configDialogMode = "copy";
+let configPanelMode = "copy";
 
 function shuffle(array) {
   const copy = [...array];
@@ -261,57 +261,64 @@ async function copyTextToClipboard(text) {
   return document.execCommand("copy");
 }
 
-function openCopyConfigDialog() {
-  const serialized = persistConfiguration({ silent: true });
+function openConfigPanel(mode) {
+  configPanelMode = mode;
+  configPanel.hidden = false;
 
-  configDialogMode = "copy";
-  configDialogTitle.textContent = "Copy Configuration";
-  configDialogHint.textContent =
-    "Copy this text and save it somewhere safe, or send it to another device. Paste it back with Paste Config.";
-  configDialogLabel.textContent = "Your config";
-  configText.readOnly = true;
-  configText.value = serialized;
-  configDialogPrimary.textContent = "Copy to Clipboard";
+  if (mode === "copy") {
+    const serialized = persistConfiguration({ silent: true });
 
-  configDialog.showModal();
-  configText.focus();
-  configText.select();
-}
+    configPanelTitle.textContent = "Copy Configuration";
+    configPanelHint.textContent =
+      "Your full config is shown below. Select all and copy it, or use the button. Paste it back later with Paste Config.";
+    configPanelLabel.textContent = "Your config";
+    configText.readOnly = true;
+    configText.value = serialized;
+    configPanelPrimary.textContent = "Copy to Clipboard";
+    configPanelPrimary.hidden = false;
 
-function openPasteConfigDialog() {
-  configDialogMode = "paste";
-  configDialogTitle.textContent = "Paste Configuration";
-  configDialogHint.textContent = "Paste the config text you copied earlier, then click Apply.";
-  configDialogLabel.textContent = "Config text";
+    requestAnimationFrame(() => {
+      configText.focus();
+      configText.select();
+      configPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+    return;
+  }
+
+  configPanelTitle.textContent = "Paste Configuration";
+  configPanelHint.textContent = "Paste your saved config text below, then click Apply.";
+  configPanelLabel.textContent = "Config text";
   configText.readOnly = false;
   configText.value = "";
-  configDialogPrimary.textContent = "Apply";
+  configPanelPrimary.textContent = "Apply";
+  configPanelPrimary.hidden = false;
 
-  configDialog.showModal();
-  configText.focus();
+  requestAnimationFrame(() => {
+    configText.focus();
+    configPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
 }
 
-function closeConfigDialog() {
-  configDialog.close();
+function closeConfigPanel() {
+  configPanel.hidden = true;
 }
 
-async function handleConfigDialogPrimary() {
-  if (configDialogMode === "copy") {
+async function handleConfigPanelPrimary() {
+  if (configPanelMode === "copy") {
     try {
       await copyTextToClipboard(configText.value);
       showSaveStatus("Configuration copied to clipboard.");
-      closeConfigDialog();
     } catch (error) {
       configText.focus();
       configText.select();
-      showSaveStatus("Select the text and copy manually (Ctrl+C / Cmd+C).", true);
+      showSaveStatus("Select the text above and copy manually (Ctrl+C / Cmd+C).", true);
     }
     return;
   }
 
   try {
     loadConfigurationText(configText.value);
-    closeConfigDialog();
+    closeConfigPanel();
   } catch (error) {
     showSaveStatus(error.message || "Could not load configuration.", true);
   }
@@ -518,14 +525,10 @@ editor.addEventListener("cancel", (event) => {
 });
 
 document.getElementById("shuffle-btn").addEventListener("click", () => renderSheet());
-copyConfigBtn.addEventListener("click", openCopyConfigDialog);
-pasteConfigBtn.addEventListener("click", openPasteConfigDialog);
-configDialogPrimary.addEventListener("click", handleConfigDialogPrimary);
-configDialogCancel.addEventListener("click", closeConfigDialog);
-configDialog.addEventListener("cancel", (event) => {
-  event.preventDefault();
-  closeConfigDialog();
-});
+copyConfigBtn.addEventListener("click", () => openConfigPanel("copy"));
+pasteConfigBtn.addEventListener("click", () => openConfigPanel("paste"));
+configPanelPrimary.addEventListener("click", handleConfigPanelPrimary);
+configPanelClose.addEventListener("click", closeConfigPanel);
 exportBtn.addEventListener("click", exportSheet);
 
 if (!restoreFromLocalStorage()) {

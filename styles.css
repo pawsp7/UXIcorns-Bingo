@@ -450,44 +450,41 @@ body {
   opacity: 0.85;
 }
 
-/* ── Config dialog ── */
+/* ── Config panel ── */
 
-.config-dialog {
-  border: none;
-  border-radius: 1rem;
-  padding: 0;
-  max-width: min(520px, calc(100vw - 2rem));
+.config-panel {
   width: 100%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
-}
-
-.config-dialog::backdrop {
-  background: rgba(0, 0, 0, 0.45);
-}
-
-.config-dialog__form {
+  margin-top: 0.5rem;
+  padding: 1.25rem;
+  border-radius: 1rem;
+  background: #fff;
+  border: 2px solid var(--blue-light);
+  box-shadow: 0 8px 28px rgba(26, 79, 208, 0.12);
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  padding: 1.5rem;
 }
 
-.config-dialog__header h2 {
+.config-panel[hidden] {
+  display: none;
+}
+
+.config-panel__title {
   font-family: "Bebas Neue", sans-serif;
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   letter-spacing: 0.06em;
   color: var(--blue-dark);
 }
 
-.config-dialog__hint {
+.config-panel__hint {
   margin-top: 0.35rem;
   font-family: "Space Grotesk", sans-serif;
   font-size: 0.8rem;
-  line-height: 1.4;
+  line-height: 1.45;
   color: var(--text-dark);
 }
 
-.config-dialog__field {
+.config-panel__field {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
@@ -497,34 +494,37 @@ body {
   color: var(--text-dark);
 }
 
-.config-dialog__field textarea {
+.config-panel__field textarea {
+  width: 100%;
   font-family: ui-monospace, "Cascadia Code", "Source Code Pro", monospace;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 400;
-  line-height: 1.4;
+  line-height: 1.45;
+  color: var(--text-dark);
   border: 2px solid #ddd;
   border-radius: 0.5rem;
-  padding: 0.6rem 0.75rem;
-  background: #fff;
+  padding: 0.75rem;
+  background: var(--bg);
   resize: vertical;
-  min-height: 140px;
-  max-height: 50vh;
+  min-height: 180px;
+  max-height: 320px;
 }
 
-.config-dialog__field textarea:focus {
+.config-panel__field textarea:focus {
   outline: none;
   border-color: var(--blue-mid);
+  background: #fff;
 }
 
-.config-dialog__actions {
+.config-panel__actions {
   display: flex;
   gap: 0.5rem;
   justify-content: flex-end;
   flex-wrap: wrap;
 }
 
-.config-dialog__actions button {
-  padding: 0.5rem 1.1rem;
+.config-panel__actions button {
+  padding: 0.55rem 1.2rem;
   border-radius: 999px;
   border: none;
   font-family: "Bebas Neue", sans-serif;
@@ -533,20 +533,20 @@ body {
   cursor: pointer;
 }
 
-.config-dialog__secondary {
+.config-panel__close {
   background: #ddd;
   color: var(--text-dark);
 }
 
-.config-dialog__primary {
+.config-panel__primary {
   background: var(--blue-dark);
   color: #fff;
 }
 
-.config-dialog__primary:hover {
+.config-panel__primary:hover {
   background: var(--pink);
 }
 
-.config-dialog__secondary:hover {
+.config-panel__close:hover {
   opacity: 0.85;
 }
