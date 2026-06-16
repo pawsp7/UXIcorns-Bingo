@@ -275,6 +275,41 @@ body {
   box-shadow: 0 6px 20px rgba(126, 200, 240, 0.45);
 }
 
+.save-btn {
+  background: var(--pink);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(232, 67, 147, 0.3);
+}
+
+.save-btn:hover {
+  background: var(--blue-mid);
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(45, 111, 212, 0.35);
+}
+
+.load-btn {
+  background: var(--blue-light);
+  color: var(--blue-dark);
+  box-shadow: 0 4px 14px rgba(126, 200, 240, 0.35);
+}
+
+.load-btn:hover {
+  background: var(--pink-light);
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(244, 166, 200, 0.45);
+}
+
+.save-status {
+  flex-basis: 100%;
+  text-align: center;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--blue-dark);
+  min-height: 1.2em;
+  margin: 0;
+}
+
 .action-btn:active {
   transform: scale(0.97);
 }
@@ -412,5 +447,116 @@ body {
 
 .cell-editor__cancel:hover,
 .cell-editor__clear:hover {
+  opacity: 0.85;
+}
+
+/* ── Config panel ── */
+
+.config-panel {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 1.25rem;
+  border-radius: 1rem;
+  background: #fff;
+  border: 2px solid var(--blue-light);
+  box-shadow: 0 8px 28px rgba(26, 79, 208, 0.12);
+  flex-direction: column;
+  gap: 1rem;
+  display: none;
+}
+
+.config-panel.is-visible,
+.config-panel:not([hidden]) {
+  display: flex;
+}
+
+.config-panel__title {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 1.5rem;
+  letter-spacing: 0.06em;
+  color: var(--blue-dark);
+}
+
+.config-panel__hint {
+  margin-top: 0.35rem;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-dark);
+}
+
+.config-panel__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.config-panel__field textarea {
+  width: 100%;
+  font-family: ui-monospace, "Cascadia Code", "Source Code Pro", monospace;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--text-dark);
+  border: 2px solid #ddd;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  background: var(--bg);
+  resize: vertical;
+  min-height: 180px;
+  max-height: 320px;
+}
+
+.config-panel__field textarea:focus {
+  outline: none;
+  border-color: var(--blue-mid);
+  background: #fff;
+}
+
+.config-panel__actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.config-panel__actions button {
+  padding: 0.55rem 1.2rem;
+  border-radius: 999px;
+  border: none;
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.config-panel__select {
+  background: var(--yellow);
+  color: var(--blue-dark);
+}
+
+.config-panel__select:hover {
+  opacity: 0.9;
+}
+
+.config-panel__close {
+  background: #ddd;
+  color: var(--text-dark);
+}
+
+.config-panel__primary {
+  background: var(--blue-dark);
+  color: #fff;
+}
+
+.config-panel__primary:hover {
+  background: var(--pink);
+}
+
+.config-panel__close:hover {
   opacity: 0.85;
 }
