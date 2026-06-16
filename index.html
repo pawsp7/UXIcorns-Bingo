@@ -23,7 +23,7 @@
       <div class="grid" id="bingo-grid" role="grid" aria-label="UX Bingo Sheet"></div>
 
       <footer class="footer">
-        <p>Click on a bubble to upload an image that fits the critieria and add any explanation text. Once all bubbles are filled export as pdf and send to @sait.uxicorns on Instagram</p>
+        <p>Click on a bubble to upload an image that fits the critieria and add any explanation text. Your card saves automatically. Once all bubbles are filled export as pdf and send to @sait.uxicorns on Instagram</p>
       </footer>
     </div>
 
@@ -31,35 +31,11 @@
       <button type="button" class="action-btn shuffle-btn" id="shuffle-btn" aria-label="Generate new bingo sheet">
         New Sheet
       </button>
-      <button type="button" class="action-btn save-btn" id="copy-config-btn" aria-label="Copy card configuration">
-        Copy Config
-      </button>
-      <button type="button" class="action-btn load-btn" id="paste-config-btn" aria-label="Paste card configuration">
-        Paste Config
-      </button>
       <button type="button" class="action-btn export-btn" id="export-btn" aria-label="Export bingo sheet as PDF">
         Export PDF
       </button>
       <p class="save-status" id="save-status" role="status" aria-live="polite"></p>
     </div>
-
-    <section class="config-panel" id="config-panel" hidden aria-live="polite">
-      <div class="config-panel__header">
-        <h2 class="config-panel__title" id="config-panel-title">Copy Configuration</h2>
-        <p class="config-panel__hint" id="config-panel-hint"></p>
-      </div>
-
-      <label class="config-panel__field">
-        <span id="config-panel-label">Your config</span>
-        <textarea id="config-text" rows="10" spellcheck="false" aria-describedby="config-panel-hint"></textarea>
-      </label>
-
-      <div class="config-panel__actions">
-        <button type="button" class="config-panel__close" id="config-panel-close">Close</button>
-        <button type="button" class="config-panel__select" id="config-select-all-btn">Select All</button>
-        <button type="button" class="config-panel__primary" id="config-panel-primary">Copy to Clipboard</button>
-      </div>
-    </section>
   </main>
 
   <dialog class="cell-editor" id="cell-editor" aria-labelledby="cell-editor-title">

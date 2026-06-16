@@ -28,13 +28,16 @@ const CELL_STYLES = [
 ];
 
 const CONFIG_VERSION = 1;
-const CONFIG_STORAGE_KEY = "uxicorns-bingo-config";
+const COOKIE_PREFIX = "uxicorns";
+const COOKIE_CHUNK_SIZE = 3500;
+const COOKIE_MAX_DAYS = 365;
+const IMAGE_STORAGE_PREFIX = "uxicorns-img-";
+const LEGACY_STORAGE_KEY = "uxicorns-bingo-config";
 
 let cells = [];
 let editingIndex = null;
 let pendingImageDataUrl = null;
 let saveStatusTimeout = null;
-let configPanelMode = "copy";
 
 const grid = document.getElementById("bingo-grid");
 const editor = document.getElementById("cell-editor");
@@ -45,17 +48,7 @@ const editorImage = document.getElementById("cell-editor-image");
 const editorPreview = document.getElementById("cell-editor-preview");
 const editorPreviewImg = document.getElementById("cell-editor-preview-img");
 const exportBtn = document.getElementById("export-btn");
-const copyConfigBtn = document.getElementById("copy-config-btn");
-const pasteConfigBtn = document.getElementById("paste-config-btn");
 const saveStatus = document.getElementById("save-status");
-const configPanel = document.getElementById("config-panel");
-const configPanelTitle = document.getElementById("config-panel-title");
-const configPanelHint = document.getElementById("config-panel-hint");
-const configPanelLabel = document.getElementById("config-panel-label");
-const configText = document.getElementById("config-text");
-const configPanelPrimary = document.getElementById("config-panel-primary");
-const configPanelClose = document.getElementById("config-panel-close");
-const configSelectAllBtn = document.getElementById("config-select-all-btn");
 
 function shuffle(array) {
   const copy = [...array];
@@ -92,11 +85,104 @@ function normalizeCell(cell, index = 0) {
     ? cell.style
     : CELL_STYLES[index % CELL_STYLES.length];
 
+  let imageDataUrl = null;
+  if (typeof cell.imageDataUrl === "string") {
+    imageDataUrl = cell.imageDataUrl;
+  } else if (cell.hasImage) {
+    imageDataUrl = localStorage.getItem(IMAGE_STORAGE_PREFIX + index);
+  }
+
   return {
     criterion: String(cell.criterion || "Unknown criterion"),
     style,
     customText: String(cell.customText ?? ""),
-    imageDataUrl: typeof cell.imageDataUrl === "string" ? cell.imageDataUrl : null,
+    imageDataUrl,
+  };
+}
+
+function setCookie(name, value, days = COOKIE_MAX_DAYS) {
+  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)};expires=${expires};path=/;SameSite=Lax`;
+}
+
+function getCookie(name) {
+  const escaped = encodeURIComponent(name).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = document.cookie.match(new RegExp(`(?:^|; )${escaped}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function deleteCookie(name) {
+  document.cookie = `${encodeURIComponent(name)}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+}
+
+function clearCookieChunks() {
+  const count = parseInt(getCookie(`${COOKIE_PREFIX}_count`) || "0", 10);
+  deleteCookie(`${COOKIE_PREFIX}_count`);
+  for (let i = 0; i < count; i++) {
+    deleteCookie(`${COOKIE_PREFIX}_${i}`);
+  }
+}
+
+function writeCookieData(data) {
+  clearCookieChunks();
+
+  const chunks = [];
+  for (let i = 0; i < data.length; i += COOKIE_CHUNK_SIZE) {
+    chunks.push(data.slice(i, i + COOKIE_CHUNK_SIZE));
+  }
+
+  setCookie(`${COOKIE_PREFIX}_count`, String(chunks.length));
+  chunks.forEach((chunk, index) => {
+    setCookie(`${COOKIE_PREFIX}_${index}`, chunk);
+  });
+}
+
+function readCookieData() {
+  const count = parseInt(getCookie(`${COOKIE_PREFIX}_count`) || "0", 10);
+  if (!count) return null;
+
+  let data = "";
+  for (let i = 0; i < count; i++) {
+    const chunk = getCookie(`${COOKIE_PREFIX}_${i}`);
+    if (chunk === null) return null;
+    data += chunk;
+  }
+
+  return data;
+}
+
+function saveImagesToStorage() {
+  cells.forEach((cell, index) => {
+    const key = IMAGE_STORAGE_PREFIX + index;
+    if (cell.imageDataUrl) {
+      try {
+        localStorage.setItem(key, cell.imageDataUrl);
+      } catch (error) {
+        console.warn(`Could not save image for cell ${index}:`, error);
+      }
+    } else {
+      localStorage.removeItem(key);
+    }
+  });
+}
+
+function clearStoredImages() {
+  for (let i = 0; i < 4; i++) {
+    localStorage.removeItem(IMAGE_STORAGE_PREFIX + i);
+  }
+}
+
+function buildCookieConfiguration() {
+  const config = buildConfiguration();
+  return {
+    version: config.version,
+    savedAt: config.savedAt,
+    cells: config.cells.map((cell) => ({
+      criterion: cell.criterion,
+      style: cell.style,
+      customText: cell.customText,
+      hasImage: Boolean(cell.imageDataUrl),
+    })),
   };
 }
 
@@ -205,170 +291,49 @@ function showSaveStatus(message, isError = false) {
   }
 }
 
-function serializeConfiguration() {
-  return JSON.stringify(buildConfiguration());
-}
-
-function parseConfigurationText(raw) {
-  const trimmed = raw.trim();
-  if (!trimmed) {
-    throw new Error("Paste your configuration text first.");
-  }
-
-  try {
-    return JSON.parse(trimmed);
-  } catch {
-    throw new Error("Invalid configuration text — make sure you copied the full config.");
-  }
-}
-
 function persistConfiguration({ silent = false } = {}) {
-  if (!cells.length) {
-    return "";
-  }
+  if (!cells.length) return;
 
-  const serialized = serializeConfiguration();
+  saveImagesToStorage();
 
   try {
-    localStorage.setItem(CONFIG_STORAGE_KEY, serialized);
-    if (!silent) showSaveStatus("Configuration saved to this browser.");
+    writeCookieData(JSON.stringify(buildCookieConfiguration()));
+    if (!silent) showSaveStatus("Card saved automatically.");
   } catch (error) {
-    if (!silent) {
-      showSaveStatus("Browser storage full — copy your config text to keep it safe.", true);
-    }
-    console.warn("Could not save to localStorage:", error);
+    console.warn("Could not save configuration to cookies:", error);
+    if (!silent) showSaveStatus("Could not save your card.", true);
   }
-
-  return serialized;
 }
 
-function restoreFromLocalStorage() {
+function restoreFromCookies() {
   try {
-    const raw = localStorage.getItem(CONFIG_STORAGE_KEY);
-    if (!raw) return false;
+    const raw = readCookieData();
+    if (!raw) return migrateFromLegacyStorage();
 
     applyConfiguration(JSON.parse(raw));
-    showSaveStatus("Restored your last saved card.");
+    showSaveStatus("Restored your saved card.");
     return true;
   } catch (error) {
     console.warn("Could not restore saved configuration:", error);
-    localStorage.removeItem(CONFIG_STORAGE_KEY);
-    return false;
+    clearCookieChunks();
+    return migrateFromLegacyStorage();
   }
 }
 
-function loadConfigurationText(raw) {
-  applyConfiguration(parseConfigurationText(raw));
-  persistConfiguration({ silent: true });
-  showSaveStatus("Configuration loaded.");
-}
-
-async function copyTextToClipboard(text) {
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(text);
-    return true;
-  }
-
-  if (!configText) return false;
-
-  configText.focus();
-  configText.select();
-  return document.execCommand("copy");
-}
-
-function showConfigPanel() {
-  if (!configPanel) return;
-
-  configPanel.hidden = false;
-  configPanel.classList.add("is-visible");
-  configPanel.style.display = "flex";
-}
-
-function hideConfigPanel() {
-  if (!configPanel) return;
-
-  configPanel.hidden = true;
-  configPanel.classList.remove("is-visible");
-  configPanel.style.display = "";
-}
-
-function openConfigPanel(mode) {
-  if (!configPanel || !configText) {
-    alert("Config panel is unavailable. Please refresh the page.");
-    return;
-  }
-
-  configPanelMode = mode;
-  showConfigPanel();
-
-  if (mode === "copy") {
-    const serialized = persistConfiguration({ silent: true }) || serializeConfiguration();
-
-    if (configPanelTitle) configPanelTitle.textContent = "Copy Configuration";
-    if (configPanelHint) {
-      configPanelHint.textContent =
-        "Your full config is shown below. Select all and copy it, or use the buttons.";
-    }
-    if (configPanelLabel) configPanelLabel.textContent = "Your config";
-    configText.readOnly = false;
-    configText.value = serialized;
-    configText.readOnly = true;
-    if (configPanelPrimary) {
-      configPanelPrimary.textContent = "Copy to Clipboard";
-      configPanelPrimary.hidden = false;
-    }
-    if (configSelectAllBtn) configSelectAllBtn.hidden = false;
-  } else {
-    if (configPanelTitle) configPanelTitle.textContent = "Paste Configuration";
-    if (configPanelHint) {
-      configPanelHint.textContent = "Paste your saved config text below, then click Apply.";
-    }
-    if (configPanelLabel) configPanelLabel.textContent = "Config text";
-    configText.readOnly = false;
-    configText.value = "";
-    if (configPanelPrimary) {
-      configPanelPrimary.textContent = "Apply";
-      configPanelPrimary.hidden = false;
-    }
-    if (configSelectAllBtn) configSelectAllBtn.hidden = true;
-  }
-
-  window.setTimeout(() => {
-    configText.focus();
-    if (mode === "copy") {
-      configText.select();
-    }
-    configPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }, 0);
-}
-
-function closeConfigPanel() {
-  hideConfigPanel();
-}
-
-function selectAllConfigText() {
-  if (!configText) return;
-  configText.focus();
-  configText.select();
-}
-
-async function handleConfigPanelPrimary() {
-  if (configPanelMode === "copy") {
-    try {
-      await copyTextToClipboard(configText.value);
-      showSaveStatus("Configuration copied to clipboard.");
-    } catch (error) {
-      selectAllConfigText();
-      showSaveStatus("Select the text above and copy manually (Ctrl+C / Cmd+C).", true);
-    }
-    return;
-  }
-
+function migrateFromLegacyStorage() {
   try {
-    loadConfigurationText(configText.value);
-    closeConfigPanel();
+    const raw = localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (!raw) return false;
+
+    applyConfiguration(JSON.parse(raw));
+    persistConfiguration({ silent: true });
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
+    showSaveStatus("Restored your saved card.");
+    return true;
   } catch (error) {
-    showSaveStatus(error.message || "Could not load configuration.", true);
+    console.warn("Could not migrate legacy storage:", error);
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
+    return false;
   }
 }
 
@@ -576,11 +541,6 @@ function setupEventListeners() {
   });
 
   document.getElementById("shuffle-btn")?.addEventListener("click", () => renderSheet());
-  copyConfigBtn?.addEventListener("click", () => openConfigPanel("copy"));
-  pasteConfigBtn?.addEventListener("click", () => openConfigPanel("paste"));
-  configPanelPrimary?.addEventListener("click", handleConfigPanelPrimary);
-  configPanelClose?.addEventListener("click", closeConfigPanel);
-  configSelectAllBtn?.addEventListener("click", selectAllConfigText);
   exportBtn?.addEventListener("click", exportSheet);
 }
 
@@ -599,12 +559,13 @@ function initApp() {
   setupEventListeners();
 
   try {
-    if (!restoreFromLocalStorage()) {
+    if (!restoreFromCookies()) {
       renderSheet(true);
     }
   } catch (error) {
     console.error("Failed to restore configuration:", error);
-    localStorage.removeItem(CONFIG_STORAGE_KEY);
+    clearCookieChunks();
+    clearStoredImages();
     renderSheet(true);
   }
 
