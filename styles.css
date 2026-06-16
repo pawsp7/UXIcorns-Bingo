@@ -231,6 +231,20 @@ body {
   text-align: left;
 }
 
+.footer p + p {
+  margin-top: 0.65rem;
+}
+
+.footer__link {
+  color: var(--blue-dark);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.footer__link:hover {
+  color: var(--pink);
+}
+
 /* ── Site meta (cookies + copyright) ── */
 
 .site-meta {
@@ -255,6 +269,33 @@ body {
   font-size: 0.7rem;
   letter-spacing: 0.04em;
   color: var(--text-dark);
+  margin: 0;
+}
+
+.site-meta__bottom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.site-meta__instagram {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dark);
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.site-meta__instagram:hover {
+  color: var(--pink);
+  transform: scale(1.08);
+}
+
+.site-meta__instagram-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  display: block;
 }
 
 /* ── Action buttons ── */
