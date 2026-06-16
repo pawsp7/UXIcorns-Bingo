@@ -44,10 +44,18 @@ const editorImage = document.getElementById("cell-editor-image");
 const editorPreview = document.getElementById("cell-editor-preview");
 const editorPreviewImg = document.getElementById("cell-editor-preview-img");
 const exportBtn = document.getElementById("export-btn");
-const saveBtn = document.getElementById("save-btn");
-const loadBtn = document.getElementById("load-btn");
-const loadConfigInput = document.getElementById("load-config-input");
+const copyConfigBtn = document.getElementById("copy-config-btn");
+const pasteConfigBtn = document.getElementById("paste-config-btn");
 const saveStatus = document.getElementById("save-status");
+const configDialog = document.getElementById("config-dialog");
+const configDialogTitle = document.getElementById("config-dialog-title");
+const configDialogHint = document.getElementById("config-dialog-hint");
+const configDialogLabel = document.getElementById("config-dialog-label");
+const configText = document.getElementById("config-text");
+const configDialogPrimary = document.getElementById("config-dialog-primary");
+const configDialogCancel = document.getElementById("config-dialog-cancel");
+
+let configDialogMode = "copy";
 
 function shuffle(array) {
   const copy = [...array];
@@ -188,31 +196,37 @@ function showSaveStatus(message, isError = false) {
   }
 }
 
-function persistConfiguration({ silent = false, download = false } = {}) {
-  const config = buildConfiguration();
-  const serialized = JSON.stringify(config);
+function serializeConfiguration() {
+  return JSON.stringify(buildConfiguration());
+}
+
+function parseConfigurationText(raw) {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    throw new Error("Paste your configuration text first.");
+  }
+
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    throw new Error("Invalid configuration text — make sure you copied the full config.");
+  }
+}
+
+function persistConfiguration({ silent = false } = {}) {
+  const serialized = serializeConfiguration();
 
   try {
     localStorage.setItem(CONFIG_STORAGE_KEY, serialized);
     if (!silent) showSaveStatus("Configuration saved to this browser.");
   } catch (error) {
     if (!silent) {
-      showSaveStatus("Browser storage full — use Save Config to download a file.", true);
+      showSaveStatus("Browser storage full — copy your config text to keep it safe.", true);
     }
     console.warn("Could not save to localStorage:", error);
   }
 
-  if (download) {
-    const blob = new Blob([serialized], { type: "application/json" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `uxicorns-bingo-config-${Date.now()}.json`;
-    link.click();
-    URL.revokeObjectURL(link.href);
-    showSaveStatus("Configuration downloaded.");
-  }
-
-  return config;
+  return serialized;
 }
 
 function restoreFromLocalStorage() {
@@ -230,22 +244,77 @@ function restoreFromLocalStorage() {
   }
 }
 
-function loadConfigurationFile(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        applyConfiguration(JSON.parse(reader.result));
-        persistConfiguration({ silent: true });
-        showSaveStatus("Configuration loaded.");
-        resolve();
-      } catch (error) {
-        reject(error);
-      }
-    };
-    reader.onerror = () => reject(new Error("Could not read the configuration file."));
-    reader.readAsText(file);
-  });
+function loadConfigurationText(raw) {
+  applyConfiguration(parseConfigurationText(raw));
+  persistConfiguration({ silent: true });
+  showSaveStatus("Configuration loaded.");
+}
+
+async function copyTextToClipboard(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return true;
+  }
+
+  configText.focus();
+  configText.select();
+  return document.execCommand("copy");
+}
+
+function openCopyConfigDialog() {
+  const serialized = persistConfiguration({ silent: true });
+
+  configDialogMode = "copy";
+  configDialogTitle.textContent = "Copy Configuration";
+  configDialogHint.textContent =
+    "Copy this text and save it somewhere safe, or send it to another device. Paste it back with Paste Config.";
+  configDialogLabel.textContent = "Your config";
+  configText.readOnly = true;
+  configText.value = serialized;
+  configDialogPrimary.textContent = "Copy to Clipboard";
+
+  configDialog.showModal();
+  configText.focus();
+  configText.select();
+}
+
+function openPasteConfigDialog() {
+  configDialogMode = "paste";
+  configDialogTitle.textContent = "Paste Configuration";
+  configDialogHint.textContent = "Paste the config text you copied earlier, then click Apply.";
+  configDialogLabel.textContent = "Config text";
+  configText.readOnly = false;
+  configText.value = "";
+  configDialogPrimary.textContent = "Apply";
+
+  configDialog.showModal();
+  configText.focus();
+}
+
+function closeConfigDialog() {
+  configDialog.close();
+}
+
+async function handleConfigDialogPrimary() {
+  if (configDialogMode === "copy") {
+    try {
+      await copyTextToClipboard(configText.value);
+      showSaveStatus("Configuration copied to clipboard.");
+      closeConfigDialog();
+    } catch (error) {
+      configText.focus();
+      configText.select();
+      showSaveStatus("Select the text and copy manually (Ctrl+C / Cmd+C).", true);
+    }
+    return;
+  }
+
+  try {
+    loadConfigurationText(configText.value);
+    closeConfigDialog();
+  } catch (error) {
+    showSaveStatus(error.message || "Could not load configuration.", true);
+  }
 }
 
 function readImageFile(file) {
@@ -449,18 +518,13 @@ editor.addEventListener("cancel", (event) => {
 });
 
 document.getElementById("shuffle-btn").addEventListener("click", () => renderSheet());
-saveBtn.addEventListener("click", () => persistConfiguration({ download: true }));
-loadBtn.addEventListener("click", () => loadConfigInput.click());
-loadConfigInput.addEventListener("change", async (event) => {
-  const file = event.target.files[0];
-  event.target.value = "";
-  if (!file) return;
-
-  try {
-    await loadConfigurationFile(file);
-  } catch (error) {
-    showSaveStatus(error.message || "Could not load configuration.", true);
-  }
+copyConfigBtn.addEventListener("click", openCopyConfigDialog);
+pasteConfigBtn.addEventListener("click", openPasteConfigDialog);
+configDialogPrimary.addEventListener("click", handleConfigDialogPrimary);
+configDialogCancel.addEventListener("click", closeConfigDialog);
+configDialog.addEventListener("cancel", (event) => {
+  event.preventDefault();
+  closeConfigDialog();
 });
 exportBtn.addEventListener("click", exportSheet);
 
