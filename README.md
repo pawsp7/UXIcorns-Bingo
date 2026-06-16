@@ -9,9 +9,7 @@ A static website that randomly generates a **2×2 UX bingo sheet** styled after 
 - Multi-colour **UXICORNS** title, Lorem Ipsum footer, and pop-in animations
 - **New Sheet** button to shuffle a fresh board
 - **Click any circle** to add a custom image and caption text
-- **Auto-save** restores your last card when you return to the page
-- **Copy Config** copies your card as text (paste anywhere to back it up or share)
-- **Paste Config** restores a card from copied config text
+- **Auto-save** — your card is saved automatically in cookies (images stored locally in the browser)
 - **Export PDF** downloads a PDF with one page per cell: criteria, custom text, then image
 
 ## Run locally
