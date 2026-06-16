@@ -280,17 +280,22 @@ body {
 }
 
 .site-meta__instagram {
-  font-family: "Space Grotesk", sans-serif;
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: var(--blue-dark);
-  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dark);
+  transition: color 0.2s ease, transform 0.2s ease;
 }
 
 .site-meta__instagram:hover {
   color: var(--pink);
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  transform: scale(1.08);
+}
+
+.site-meta__instagram-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  display: block;
 }
 
 /* ── Action buttons ── */
