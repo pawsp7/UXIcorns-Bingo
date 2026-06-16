@@ -43,7 +43,7 @@
       <p class="save-status" id="save-status" role="status" aria-live="polite"></p>
     </div>
 
-    <section class="config-panel" id="config-panel" hidden>
+    <section class="config-panel" id="config-panel" hidden aria-live="polite">
       <div class="config-panel__header">
         <h2 class="config-panel__title" id="config-panel-title">Copy Configuration</h2>
         <p class="config-panel__hint" id="config-panel-hint"></p>
@@ -56,6 +56,7 @@
 
       <div class="config-panel__actions">
         <button type="button" class="config-panel__close" id="config-panel-close">Close</button>
+        <button type="button" class="config-panel__select" id="config-select-all-btn">Select All</button>
         <button type="button" class="config-panel__primary" id="config-panel-primary">Copy to Clipboard</button>
       </div>
     </section>

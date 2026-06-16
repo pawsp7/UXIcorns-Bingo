@@ -1,23 +1,23 @@
 const CRITERIA = [
-"Strong brand identity",
-"Single Colour palette",
-"Perfect alignment",
-"3+ different fonts",
-"90’s style",
-"Solid coloured background",
-"Gradient Element",
-"Textless",
-"Imageless",
-"Secret easter egg",
-"Totally designed by AI",
-"Multiple menus open at once",
-"Unique accessibility feature",
-"Caption inclusion",
-"Most information in smallest space",
-"Pop-up (email prompt/discount prompt)",
-"Black/White UI",
-"Redundant feature",
-"Terrible sizing",
+  "Strong brand identity",
+  "Single Colour palette",
+  "Perfect alignment",
+  "3+ different fonts",
+  "90's style",
+  "Solid coloured background",
+  "Gradient Element",
+  "Textless",
+  "Imageless",
+  "Secret easter egg",
+  "Totally designed by AI",
+  "Multiple menus open at once",
+  "Unique accessibility feature",
+  "Caption inclusion",
+  "Most information in smallest space",
+  "Pop-up (email prompt/discount prompt)",
+  "Black/White UI",
+  "Redundant feature",
+  "Terrible sizing",
 ];
 
 const CELL_STYLES = [
@@ -34,6 +34,7 @@ let cells = [];
 let editingIndex = null;
 let pendingImageDataUrl = null;
 let saveStatusTimeout = null;
+let configPanelMode = "copy";
 
 const grid = document.getElementById("bingo-grid");
 const editor = document.getElementById("cell-editor");
@@ -54,8 +55,7 @@ const configPanelLabel = document.getElementById("config-panel-label");
 const configText = document.getElementById("config-text");
 const configPanelPrimary = document.getElementById("config-panel-primary");
 const configPanelClose = document.getElementById("config-panel-close");
-
-let configPanelMode = "copy";
+const configSelectAllBtn = document.getElementById("config-select-all-btn");
 
 function shuffle(array) {
   const copy = [...array];
@@ -80,6 +80,23 @@ function createCellState(criterion, style) {
     style,
     customText: "",
     imageDataUrl: null,
+  };
+}
+
+function normalizeCell(cell, index = 0) {
+  if (!cell || typeof cell !== "object") {
+    throw new Error("Invalid cell data.");
+  }
+
+  const style = CELL_STYLES.includes(cell.style)
+    ? cell.style
+    : CELL_STYLES[index % CELL_STYLES.length];
+
+  return {
+    criterion: String(cell.criterion || "Unknown criterion"),
+    style,
+    customText: String(cell.customText ?? ""),
+    imageDataUrl: typeof cell.imageDataUrl === "string" ? cell.imageDataUrl : null,
   };
 }
 
@@ -121,7 +138,17 @@ function renderCellElement(cell, index) {
 }
 
 function renderGrid() {
+  if (!grid) {
+    console.error("Bingo grid element not found.");
+    return;
+  }
+
   grid.innerHTML = "";
+
+  if (!cells.length) {
+    return;
+  }
+
   cells.forEach((cell, index) => {
     grid.appendChild(renderCellElement(cell, index));
   });
@@ -155,36 +182,18 @@ function buildConfiguration() {
   };
 }
 
-function isValidCell(cell) {
-  return (
-    cell &&
-    typeof cell.criterion === "string" &&
-    typeof cell.style === "string" &&
-    CELL_STYLES.includes(cell.style) &&
-    typeof cell.customText === "string" &&
-    (cell.imageDataUrl === null || typeof cell.imageDataUrl === "string")
-  );
-}
-
 function applyConfiguration(config) {
   if (!config || !Array.isArray(config.cells) || config.cells.length !== 4) {
     throw new Error("Invalid configuration: expected 4 cells.");
   }
 
-  if (!config.cells.every(isValidCell)) {
-    throw new Error("Invalid configuration: one or more cells are malformed.");
-  }
-
-  cells = config.cells.map((cell) => ({
-    criterion: cell.criterion,
-    style: cell.style,
-    customText: cell.customText,
-    imageDataUrl: cell.imageDataUrl,
-  }));
+  cells = config.cells.map((cell, index) => normalizeCell(cell, index));
   renderGrid();
 }
 
 function showSaveStatus(message, isError = false) {
+  if (!saveStatus) return;
+
   saveStatus.textContent = message;
   saveStatus.style.color = isError ? "var(--pink)" : "var(--blue-dark)";
 
@@ -214,6 +223,10 @@ function parseConfigurationText(raw) {
 }
 
 function persistConfiguration({ silent = false } = {}) {
+  if (!cells.length) {
+    return "";
+  }
+
   const serialized = serializeConfiguration();
 
   try {
@@ -256,51 +269,87 @@ async function copyTextToClipboard(text) {
     return true;
   }
 
+  if (!configText) return false;
+
   configText.focus();
   configText.select();
   return document.execCommand("copy");
 }
 
-function openConfigPanel(mode) {
-  configPanelMode = mode;
+function showConfigPanel() {
+  if (!configPanel) return;
+
   configPanel.hidden = false;
+  configPanel.classList.add("is-visible");
+  configPanel.style.display = "flex";
+}
 
-  if (mode === "copy") {
-    const serialized = persistConfiguration({ silent: true });
+function hideConfigPanel() {
+  if (!configPanel) return;
 
-    configPanelTitle.textContent = "Copy Configuration";
-    configPanelHint.textContent =
-      "Your full config is shown below. Select all and copy it, or use the button. Paste it back later with Paste Config.";
-    configPanelLabel.textContent = "Your config";
-    configText.readOnly = true;
-    configText.value = serialized;
-    configPanelPrimary.textContent = "Copy to Clipboard";
-    configPanelPrimary.hidden = false;
+  configPanel.hidden = true;
+  configPanel.classList.remove("is-visible");
+  configPanel.style.display = "";
+}
 
-    requestAnimationFrame(() => {
-      configText.focus();
-      configText.select();
-      configPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    });
+function openConfigPanel(mode) {
+  if (!configPanel || !configText) {
+    alert("Config panel is unavailable. Please refresh the page.");
     return;
   }
 
-  configPanelTitle.textContent = "Paste Configuration";
-  configPanelHint.textContent = "Paste your saved config text below, then click Apply.";
-  configPanelLabel.textContent = "Config text";
-  configText.readOnly = false;
-  configText.value = "";
-  configPanelPrimary.textContent = "Apply";
-  configPanelPrimary.hidden = false;
+  configPanelMode = mode;
+  showConfigPanel();
 
-  requestAnimationFrame(() => {
+  if (mode === "copy") {
+    const serialized = persistConfiguration({ silent: true }) || serializeConfiguration();
+
+    if (configPanelTitle) configPanelTitle.textContent = "Copy Configuration";
+    if (configPanelHint) {
+      configPanelHint.textContent =
+        "Your full config is shown below. Select all and copy it, or use the buttons.";
+    }
+    if (configPanelLabel) configPanelLabel.textContent = "Your config";
+    configText.readOnly = false;
+    configText.value = serialized;
+    configText.readOnly = true;
+    if (configPanelPrimary) {
+      configPanelPrimary.textContent = "Copy to Clipboard";
+      configPanelPrimary.hidden = false;
+    }
+    if (configSelectAllBtn) configSelectAllBtn.hidden = false;
+  } else {
+    if (configPanelTitle) configPanelTitle.textContent = "Paste Configuration";
+    if (configPanelHint) {
+      configPanelHint.textContent = "Paste your saved config text below, then click Apply.";
+    }
+    if (configPanelLabel) configPanelLabel.textContent = "Config text";
+    configText.readOnly = false;
+    configText.value = "";
+    if (configPanelPrimary) {
+      configPanelPrimary.textContent = "Apply";
+      configPanelPrimary.hidden = false;
+    }
+    if (configSelectAllBtn) configSelectAllBtn.hidden = true;
+  }
+
+  window.setTimeout(() => {
     configText.focus();
+    if (mode === "copy") {
+      configText.select();
+    }
     configPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  });
+  }, 0);
 }
 
 function closeConfigPanel() {
-  configPanel.hidden = true;
+  hideConfigPanel();
+}
+
+function selectAllConfigText() {
+  if (!configText) return;
+  configText.focus();
+  configText.select();
 }
 
 async function handleConfigPanelPrimary() {
@@ -309,8 +358,7 @@ async function handleConfigPanelPrimary() {
       await copyTextToClipboard(configText.value);
       showSaveStatus("Configuration copied to clipboard.");
     } catch (error) {
-      configText.focus();
-      configText.select();
+      selectAllConfigText();
       showSaveStatus("Select the text above and copy manually (Ctrl+C / Cmd+C).", true);
     }
     return;
@@ -492,45 +540,79 @@ async function exportSheet() {
   }
 }
 
-editorImage.addEventListener("change", async (event) => {
-  const file = event.target.files[0];
-  if (!file) return;
+function setupEventListeners() {
+  if (editorImage) {
+    editorImage.addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      try {
+        pendingImageDataUrl = await readImageFile(file);
+        updateEditorPreview(pendingImageDataUrl);
+      } catch (error) {
+        alert(error.message);
+        editorImage.value = "";
+      }
+    });
+  }
+
+  document.getElementById("cell-editor-clear")?.addEventListener("click", () => {
+    editorText.value = "";
+    editorImage.value = "";
+    pendingImageDataUrl = null;
+    updateEditorPreview(null);
+  });
+
+  document.querySelector(".cell-editor__cancel")?.addEventListener("click", closeCellEditor);
+
+  editorForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    saveCellEditor();
+  });
+
+  editor?.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    closeCellEditor();
+  });
+
+  document.getElementById("shuffle-btn")?.addEventListener("click", () => renderSheet());
+  copyConfigBtn?.addEventListener("click", () => openConfigPanel("copy"));
+  pasteConfigBtn?.addEventListener("click", () => openConfigPanel("paste"));
+  configPanelPrimary?.addEventListener("click", handleConfigPanelPrimary);
+  configPanelClose?.addEventListener("click", closeConfigPanel);
+  configSelectAllBtn?.addEventListener("click", selectAllConfigText);
+  exportBtn?.addEventListener("click", exportSheet);
+}
+
+function ensureSheetRendered() {
+  if (!grid) {
+    console.error("Cannot render bingo sheet: #bingo-grid is missing.");
+    return;
+  }
+
+  if (grid.children.length === 0 || cells.length !== 4) {
+    renderSheet(true);
+  }
+}
+
+function initApp() {
+  setupEventListeners();
 
   try {
-    pendingImageDataUrl = await readImageFile(file);
-    updateEditorPreview(pendingImageDataUrl);
+    if (!restoreFromLocalStorage()) {
+      renderSheet(true);
+    }
   } catch (error) {
-    alert(error.message);
-    editorImage.value = "";
+    console.error("Failed to restore configuration:", error);
+    localStorage.removeItem(CONFIG_STORAGE_KEY);
+    renderSheet(true);
   }
-});
 
-document.getElementById("cell-editor-clear").addEventListener("click", () => {
-  editorText.value = "";
-  editorImage.value = "";
-  pendingImageDataUrl = null;
-  updateEditorPreview(null);
-});
+  ensureSheetRendered();
+}
 
-document.querySelector(".cell-editor__cancel").addEventListener("click", closeCellEditor);
-
-editorForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  saveCellEditor();
-});
-
-editor.addEventListener("cancel", (event) => {
-  event.preventDefault();
-  closeCellEditor();
-});
-
-document.getElementById("shuffle-btn").addEventListener("click", () => renderSheet());
-copyConfigBtn.addEventListener("click", () => openConfigPanel("copy"));
-pasteConfigBtn.addEventListener("click", () => openConfigPanel("paste"));
-configPanelPrimary.addEventListener("click", handleConfigPanelPrimary);
-configPanelClose.addEventListener("click", closeConfigPanel);
-exportBtn.addEventListener("click", exportSheet);
-
-if (!restoreFromLocalStorage()) {
-  renderSheet(true);
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initApp);
+} else {
+  initApp();
 }
